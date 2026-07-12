@@ -17,7 +17,7 @@
  using an Adafruit Wiz5500 Ethernet Breakout
 
  Circuit:
- * Ethernet breakout attached to pins 10, 11, 12, 13
+ * Ethernet breakout attached to Pico pins 16, 17, 18, 19
 
  created 18 Dec 2009
  by David A. Mellis
