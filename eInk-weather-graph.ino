@@ -1,5 +1,4 @@
 // good plan:
-// add eInk
 // get weather
 // get time
 
@@ -20,15 +19,13 @@
 
 byte mac[] = { 0xAA, 0xBB, 0xCC, 0xDD, 0xEE, 0xFF };
 
-char server[] = "wifitest.adafruit.com";
+char server[] = "api.open-meteo.com";
 
 IPAddress ip(192, 168, 0, 177);
 IPAddress myDns(192, 168, 0, 1);
 
 EthernetClient client;
 
-unsigned long beginMicros, endMicros;
-unsigned long byteCount = 0;
 bool printWebData = true;
 bool showWebData = true;
 String text = "";
@@ -70,14 +67,13 @@ void setup() {
   if (client.connect(server, 80)) {
     Serial.print("connected to ");
     Serial.println(client.remoteIP());
-    client.println("GET /testwifi/index.html HTTP/1.1");
-    client.println("Host: wifitest.adafruit.com");
+    client.println("GET /v1/forecast?latitude=45.6216&longitude=-94.2069&hourly=temperature_2m,precipitation_probability&timezone=America%2FChicago&wind_speed_unit=mph&temperature_unit=fahrenheit&precipitation_unit=inch&forecast_hours=24 HTTP/1.1");
+    client.println("Host: api.open-meteo.com");
     client.println("Connection: close");
     client.println();
   } else {
     Serial.println("connection failed");
   }
-  beginMicros = micros();
 }
 
 void loop() {
@@ -88,24 +84,12 @@ void loop() {
       Serial.write(c); // print to serial monitor
     }
     text = text + c;
-    byteCount++;
   }
 
   if (!client.connected()) {
-    endMicros = micros();
     Serial.println();
     Serial.println("disconnecting.");
     client.stop();
-    Serial.print("Received ");
-    Serial.print(byteCount);
-    Serial.print(" bytes in ");
-    float seconds = (float)(endMicros - beginMicros) / 1000000.0;
-    Serial.print(seconds, 4);
-    float rate = (float)byteCount / seconds / 1000.0;
-    Serial.print(", rate = ");
-    Serial.print(rate);
-    Serial.print(" kbytes/second");
-    Serial.println();
     
     if (showWebData) {
       display.clearBuffer();
