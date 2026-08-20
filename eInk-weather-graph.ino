@@ -26,9 +26,7 @@ IPAddress myDns(192, 168, 0, 1);
 
 EthernetClient client;
 
-bool printWebData = true;
-bool showWebData = true;
-bool requireSerial = false;
+bool requireSerial = false; // if true, will not run until serial monitor connected
 String text = "";
 String times[24] = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
 float temps[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -40,6 +38,8 @@ int mappedPrecips[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 int indexOfLastSymbol = 0;
 int indexOfCurrentSymbol = 0;
 int indexOfNextSymbol = 0;
+int highTempX = 0; // x position on display; based on length of number
+int lowTempX = 0; // x position on display; based on length of number
 
 ThinkInk_213_Quadcolor_AJHE5 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY, EPD_SPI);
 
@@ -50,6 +50,7 @@ void setup() {
   }
   Ethernet.init(17);  // CS
   display.begin(THINKINK_QUADCOLOR);
+  display.cp437(true);
   Serial.println("Initialize Ethernet with DHCP:");
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
@@ -87,22 +88,22 @@ void loop() {
   int len = client.available();
   if (len > 0) {
     char c = client.read();
-    if (printWebData) {
-      Serial.write(c); // print to serial monitor
-    }
+    Serial.write(c);
     text += c;
   }
   if (!client.connected()) {
     Serial.println();
     Serial.println("disconnecting.");
     client.stop();
-    if (showWebData) {
-      display.clearBuffer();
-      fillArrays();
-      mapArrays();
-      display.display();
-      delay(15000);
-    }
+    display.clearBuffer();
+    fillArrays();
+    mapArrays();
+    drawLines();
+    drawGraph();
+    drawText();
+    drawName();
+    display.display();
+    delay(15000);
     while (true) {}
   }
 }
@@ -160,8 +161,82 @@ void mapArrays() {
   }
   lowTemp = lowTempInt;
   lowTemp /= 10;
-  for (int i = 0; i < 23; i++) {
-    mappedTemps[i] = map(temps[i], lowTemp, highTemp, 0, 50);
-    mappedPrecips[i] = map(precips[i], 0, 100, 0, 50);
+  for (int i = 0; i < 24; i++) {
+    mappedTemps[i] = map(temps[i], lowTemp, highTemp, 51, 1);
+    mappedPrecips[i] = map(precips[i], 0, 100, 112, 62);
   }
+}
+
+void drawLines() {
+  display.fillScreen(EPD_WHITE);
+  display.drawFastVLine(20, 1, 50, EPD_BLACK);
+  display.drawFastVLine(20, 62, 50, EPD_BLACK);
+  display.drawFastHLine(20, 51, 230, EPD_BLACK);
+  display.drawFastHLine(20, 112, 230, EPD_BLACK);
+}
+
+void drawGraph() {
+  for (int i = 0; i < 23; i++) {
+    display.drawLine((i * 10 + 20), mappedTemps[i], ((i + 1) * 10 + 20), mappedTemps[i + 1], EPD_RED);
+  }
+  for (int i = 0; i < 23; i++) {
+    display.drawLine((i * 10 + 20), mappedPrecips[i], ((i + 1) * 10 + 20), mappedPrecips[i + 1], EPD_RED);
+  }
+}
+
+void drawText() {
+  display.setTextSize(1);
+  display.setTextColor(EPD_RED);
+  for (int i = 0; i < 24; i += 2) {
+    display.setCursor(i * 10 + 15, 53);
+    display.print(times[i]);
+  }
+  for (int i = 0; i < 24; i += 2) {
+    display.setCursor(i * 10 + 15, 114);
+    display.print(times[i]);
+  }
+  if (highTemp == 0) {
+    highTempX = 13;
+  } else if (highTemp < 100 && highTemp > -100) {
+    highTempX = 7;
+  } else {
+    highTempX = 1;
+  }
+  if (lowTemp == 0) {
+    lowTempX = 13;
+  } else if (lowTemp < 100 && lowTemp > -100) {
+    lowTempX = 7;
+  } else {
+    lowTempX = 1;
+  }
+  display.setCursor(highTempX, 1);
+  display.print(highTemp, 0);
+  display.setCursor(7, 23);
+  display.write(0xF8);
+  display.print("F");
+  display.setCursor(lowTempX, 45);
+  display.print(lowTemp, 0);
+  display.setCursor(1, 62);
+  display.print("100");
+  display.setCursor(13, 84);
+  display.print("%");
+  display.setCursor(13, 106);
+  display.print("0");
+}
+void drawName() {
+  display.fillRect(0, 73, 11, 49, EPD_BLACK);
+  display.setTextSize(1);
+  display.setTextColor(EPD_YELLOW);
+  display.setCursor(1, 74);
+  display.print("H");
+  display.setCursor(2, 82);
+  display.print("E");
+  display.setCursor(3, 90);
+  display.print("N");
+  display.setCursor(4, 98);
+  display.print("R");
+  display.setCursor(5, 106);
+  display.print("Y");
+  display.setCursor(6, 114);
+  display.print("!");
 }
