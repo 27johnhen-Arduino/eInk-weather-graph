@@ -1,5 +1,5 @@
 // good plan:
-// get weather
+// make graph
 // get time
 
 
@@ -28,19 +28,28 @@ EthernetClient client;
 
 bool printWebData = true;
 bool showWebData = true;
+bool requireSerial = false;
 String text = "";
+String times[24] = {"", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", "", ""};
+float temps[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int precips[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+float highTemp = 0; // maximum value on graph; higher than actual highest temperature in data set
+float lowTemp = 0; // minimum value on graph; lower than actual lowest temperature in data set
+int mappedTemps[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // mapped from 0 - 50 for display
+int mappedPrecips[24] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}; // mapped from 0 - 50 for display
+int indexOfLastSymbol = 0;
+int indexOfCurrentSymbol = 0;
+int indexOfNextSymbol = 0;
 
 ThinkInk_213_Quadcolor_AJHE5 display(EPD_DC, EPD_RESET, EPD_CS, SRAM_CS, EPD_BUSY, EPD_SPI);
 
-
 void setup() {
-  Ethernet.init(17);  // CS
   Serial.begin(115200);
-  while (!Serial) {
-    ;
+  if (requireSerial) {
+    while (!Serial) {}
   }
+  Ethernet.init(17);  // CS
   display.begin(THINKINK_QUADCOLOR);
-
   Serial.println("Initialize Ethernet with DHCP:");
   if (Ethernet.begin(mac) == 0) {
     Serial.println("Failed to configure Ethernet using DHCP");
@@ -58,12 +67,10 @@ void setup() {
     Serial.print("  DHCP assigned IP ");
     Serial.println(Ethernet.localIP());
   }
-
   delay(1000);
   Serial.print("connecting to ");
   Serial.print(server);
   Serial.println("...");
-
   if (client.connect(server, 80)) {
     Serial.print("connected to ");
     Serial.println(client.remoteIP());
@@ -83,25 +90,78 @@ void loop() {
     if (printWebData) {
       Serial.write(c); // print to serial monitor
     }
-    text = text + c;
+    text += c;
   }
-
   if (!client.connected()) {
     Serial.println();
     Serial.println("disconnecting.");
     client.stop();
-    
     if (showWebData) {
       display.clearBuffer();
-      display.setTextSize(1);
-      display.setCursor(0, 0);
-      display.setTextColor(EPD_RED);
-      display.setTextWrap(true);
-      display.print(text);
+      fillArrays();
+      mapArrays();
       display.display();
       delay(15000);
     }
-  
     while (true) {}
+  }
+}
+
+void fillArrays() {
+  indexOfLastSymbol = text.indexOf("[");
+  for (int i = 0; i < 24; i++) {
+    indexOfCurrentSymbol = text.indexOf("T", indexOfLastSymbol + 1);
+    times[i] = text.substring(indexOfCurrentSymbol + 1, indexOfCurrentSymbol + 3);
+    indexOfLastSymbol = indexOfCurrentSymbol;
+  }
+  indexOfCurrentSymbol = text.indexOf("[", indexOfLastSymbol);
+  for (int i = 0; i < 23; i++) {
+    indexOfNextSymbol = text.indexOf(",", indexOfCurrentSymbol + 1);
+    temps[i] = text.substring(indexOfCurrentSymbol + 1, indexOfNextSymbol).toFloat();
+    indexOfLastSymbol = indexOfCurrentSymbol;
+    indexOfCurrentSymbol = indexOfNextSymbol;
+  }
+  indexOfNextSymbol = text.indexOf("]", indexOfCurrentSymbol + 1);
+  temps[23] = text.substring(indexOfCurrentSymbol + 1, indexOfNextSymbol).toFloat();
+  indexOfLastSymbol = indexOfCurrentSymbol;
+  indexOfCurrentSymbol = text.indexOf("[", indexOfLastSymbol);
+  for (int i = 0; i < 23; i++) {
+    indexOfNextSymbol = text.indexOf(",", indexOfCurrentSymbol + 1);
+    precips[i] = text.substring(indexOfCurrentSymbol + 1, indexOfNextSymbol).toInt();
+    indexOfLastSymbol = indexOfCurrentSymbol;
+    indexOfCurrentSymbol = indexOfNextSymbol;
+  }
+  indexOfNextSymbol = text.indexOf("]", indexOfCurrentSymbol + 1);
+  precips[23] = text.substring(indexOfCurrentSymbol + 1, indexOfNextSymbol).toInt();
+}
+
+void mapArrays() {
+  highTemp = -7210111011412133;
+  lowTemp = 7210111011412133;
+  for (int i = 0; i < 23; i++) {
+    if (temps[i] > highTemp) {
+      highTemp = temps [i];
+    }
+    if (temps[i] < lowTemp) {
+      lowTemp = temps [i];
+    }
+  }
+  highTemp *= 10;
+  int highTempInt = highTemp;
+  while (highTempInt % 100 != 0) {
+    highTempInt++;
+  }
+  highTemp = highTempInt;
+  highTemp /= 10;
+  lowTemp *= 10;
+  int lowTempInt = lowTemp;
+  while (lowTempInt % 100 != 0) {
+    lowTempInt--;
+  }
+  lowTemp = lowTempInt;
+  lowTemp /= 10;
+  for (int i = 0; i < 23; i++) {
+    mappedTemps[i] = map(temps[i], lowTemp, highTemp, 0, 50);
+    mappedPrecips[i] = map(precips[i], 0, 100, 0, 50);
   }
 }
