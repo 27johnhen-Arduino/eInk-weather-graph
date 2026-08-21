@@ -1,8 +1,3 @@
-// good plan:
-// make graph
-// get time
-
-
 // if Ethernet not working sudo systemctl restart NetworkManager
 
 
@@ -103,8 +98,8 @@ void loop() {
     drawText();
     drawName();
     display.display();
-    delay(15000);
-    while (true) {}
+    delay(3600000); // 1 hour
+    rp2040.reboot();
   }
 }
 
@@ -169,10 +164,16 @@ void mapArrays() {
 
 void drawLines() {
   display.fillScreen(EPD_WHITE);
+  display.drawFastHLine(20, 26, 230, EPD_BLACK);
+  display.drawFastHLine(20, 87, 230, EPD_BLACK);
   display.drawFastVLine(20, 1, 50, EPD_BLACK);
   display.drawFastVLine(20, 62, 50, EPD_BLACK);
+  display.drawFastVLine(249, 1, 50, EPD_BLACK);
+  display.drawFastVLine(249, 62, 50, EPD_BLACK);
   display.drawFastHLine(20, 51, 230, EPD_BLACK);
   display.drawFastHLine(20, 112, 230, EPD_BLACK);
+  display.drawFastHLine(20, 1, 230, EPD_BLACK);
+  display.drawFastHLine(20, 62, 230, EPD_BLACK);
 }
 
 void drawGraph() {
