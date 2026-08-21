@@ -1,3 +1,25 @@
+/* circuit:
+ * Raspberry Pi Pico 2 (henceforth referred to as Pico) connected by Ethernet to Raspberry Pi
+ * Pico VBUS connected to Raspberry Pi 5V
+ * Pico GND connected to Raspberry Pi GND
+ * Pico 3V3(OUT) connected to Adafruit WIZ5500 Ethernet Co-Processor Breakout Board (henceforth referred to as Ethernet) VIN
+ * Pico 3V3(OUT) connected to Adafruit 2.13" 250x122 Quad-Color eInk (henceforth referred to as eInk) VIN
+ * Pico GP19 connected to Ethernet MOSI
+ * Pico GP19 connected to eInk MOSI
+ * Pico GP18 connected to Ethernet SCK
+ * Pico GP18 connected to eInk SCK
+ * Pico GND connected to Ethernet GND
+ * Pico GP17 connected to Ethernet CS
+ * Pico GP16 connected to Ethernet MISO
+ * Pico GP16 connected to eInk MISO
+ * Pico GND connected to eInk GND
+ * Pico GP8 connected to eInk ECS
+ * Pico GP7 connected to eInk D/C
+ * Pico GP6 connected to eInk SRCS
+ * Pico GP4 connected to eInk RST
+ * Pico GP3 connected to eInk BUSY
+ */
+
 // if Ethernet not working sudo systemctl restart NetworkManager
 
 
